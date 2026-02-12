@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Love Story - Valentine's Notebook</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Georgia', serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+        const { useState, useEffect, createElement: h } = React;
+
+        const HeartIcon = () => h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+            h('path', { d: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z' })
+        );
+
+        const BookIcon = () => h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+            h('path', { d: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20' }),
+            h('path', { d: 'M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z' })
+        );
+
+        const DownloadIcon = () => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+            h('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
+            h('polyline', { points: '7 10 12 15 17 10' }),
+            h('line', { x1: 12, y1: 15, x2: 12, y2: 3 })
+        );
+
+        const UploadIcon = () => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+            h('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
+            h('polyline', { points: '17 8 12 3 7 8' }),
+            h('line', { x1: 12, y1: 3, x2: 12, y2: 15 })
+        );
+
+        const RefreshIcon = () => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+            h('polyline', { points: '1 4 1 10 7 10' }),
+            h('polyline', { points: '23 20 23 14 17 14' }),
+            h('path', { d: 'M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15' })
+        );
+
+        const CheckIcon = () => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+            h('polyline', { points: '20 6 9 17 4 12' })
+        );
+
+        const topics = [
+            { title: "First Impressions", question: "What was your first thought when you met me?" },
+            { title: "The Moment I Knew", question: "When did you realize you were falling in love with me?" },
+            { title: "My Favorite Memory", question: "What is your favorite memory of us together?" },
+            { title: "What Makes You Smile", question: "What is one thing I do that always makes you smile?" },
+            { title: "Our Song", question: "If we had a theme song, what would it be and why?" },
+            { title: "Dream Date", question: "Describe your perfect date with me." },
+            { title: "Little Things", question: "What little thing do I do that means the world to you?" },
+            { title: "Your Laugh", question: "What makes you laugh the hardest when we're together?" },
+            { title: "Future Dreams", question: "What do you dream about for our future together?" },
+            { title: "The Way You Love", question: "How do you feel most loved by me?" },
+            { title: "Our Inside Jokes", question: "What's our funniest inside joke?" },
+            { title: "When I'm Away", question: "What do you miss most about me when we're apart?" },
+            { title: "Comfort Zone", question: "What makes you feel most comfortable and safe with me?" },
+            { title: "Growing Together", question: "How have I helped you grow as a person?" },
+            { title: "Unique Qualities", question: "What do you love most about my personality?" },
+            { title: "Physical Attraction", question: "What physical feature of mine do you find most attractive?" },
+            { title: "Acts of Love", question: "What's the most romantic thing I've ever done for you?" },
+            { title: "Daily Rituals", question: "What's your favorite daily routine we share?" },
+            { title: "Challenges Overcome", question: "What challenge have we overcome that made us stronger?" },
+            { title: "Your Support", question: "How do I support you in pursuing your dreams?" },
+            { title: "Pillow Talk", question: "What do you love most about our late-night conversations?" },
+            { title: "Adventure Awaits", question: "Where in the world do you want to travel with me?" },
+            { title: "Home Feeling", question: "What makes you feel at home when you're with me?" },
+            { title: "Grateful Heart", question: "What are you most grateful for about our relationship?" },
+            { title: "Your Quirks", question: "What quirky thing about me do you secretly love?" },
+            { title: "Perfect Sunday", question: "Describe the perfect lazy Sunday together." },
+            { title: "Words Unspoken", question: "What do you wish I knew without you having to say it?" },
+            { title: "The Butterflies", question: "What do I do that still gives you butterflies?" },
+            { title: "Teamwork", question: "What makes us such a great team?" },
+            { title: "Your Pride", question: "What about me makes you feel proud?" },
+            { title: "Surprise Moments", question: "What's the best surprise I've ever given you?" },
+            { title: "Weakness to Strength", question: "How do my strengths balance your weaknesses?" },
+            { title: "The Little Look", question: "What does my smile mean to you?" },
+            { title: "Trust & Honesty", question: "How have I shown you that you can trust me completely?" },
+            { title: "Your Favorite Gift", question: "What's the most meaningful gift I've given you?" },
+            { title: "Pet Names", question: "What's your favorite nickname I call you?" },
+            { title: "Morning Moments", question: "What do you love about waking up next to me?" },
+            { title: "Rainy Days", question: "What's your ideal rainy day activity with me?" },
+            { title: "Your Champion", question: "How do I make you feel like you can conquer anything?" },
+            { title: "Secret Talents", question: "What hidden talent of mine do you admire?" },
+            { title: "The Hard Times", question: "How have I been there for you during difficult times?" },
+            { title: "Communication", question: "What do you appreciate most about how we communicate?" },
+            { title: "Your Happy Place", question: "Where is your favorite place to be with me?" },
+            { title: "Cooking Together", question: "What's your favorite meal we've cooked together?" },
+            { title: "Dancing in the Dark", question: "Describe a perfect moment of dancing together." },
+            { title: "Your Best Friend", question: "How am I not just your lover but also your best friend?" },
+            { title: "Respecting You", question: "How do I show you respect in our relationship?" },
+            { title: "Shared Interests", question: "What hobby or interest do you love that we share?" },
+            { title: "Opposite Attracts", question: "What difference between us actually strengthens our bond?" },
+            { title: "The Way You Touch", question: "What kind of physical affection do you love most from me?" },
+            { title: "Silly Moments", question: "What's the silliest thing we've ever done together?" },
+            { title: "Your Inspiration", question: "How do I inspire you to be better?" },
+            { title: "Conflict Resolution", question: "What do you appreciate about how we handle disagreements?" },
+            { title: "Movie Night", question: "What's your favorite movie to watch cuddled up together?" },
+            { title: "The Real Me", question: "What part of the 'real me' do you love most?" },
+            { title: "Family Matters", question: "How do you feel about how I treat your family?" },
+            { title: "Your Cheerleader", question: "How do I celebrate your successes?" },
+            { title: "Cozy Evenings", question: "What's your perfect evening in with me?" },
+            { title: "Your Voice", question: "What do you love about the way I talk to you?" },
+            { title: "Shared Goals", question: "What goal are you excited for us to achieve together?" },
+            { title: "Random Acts", question: "What random act of kindness from me touched your heart?" },
+            { title: "The First Kiss", question: "How did our first kiss make you feel?" },
+            { title: "Learning Together", question: "What have you learned about love from being with me?" },
+            { title: "Holiday Magic", question: "What's your favorite holiday we've spent together?" },
+            { title: "Your Protector", question: "How do I make you feel safe and protected?" },
+            { title: "Anniversary Thoughts", question: "What would be your dream anniversary celebration?" },
+            { title: "Music Moments", question: "What song reminds you of us?" },
+            { title: "Coffee & Conversations", question: "What do you love about our morning coffee talks?" },
+            { title: "Your Laughter", question: "What's your favorite thing that makes us both laugh?" },
+            { title: "Photograph Memories", question: "What's your favorite photo of us and why?" },
+            { title: "Accepting All of You", question: "How do I show you I accept every part of you?" },
+            { title: "Future Family", question: "What excites you about potentially building a family together?" },
+            { title: "The Little Kiss", question: "What's your favorite type of kiss from me?" },
+            { title: "Your Calm", question: "How do I help you feel calm during stressful times?" },
+            { title: "Saturday Adventures", question: "What's your favorite Saturday adventure we've had?" },
+            { title: "Playlist Love", question: "If you made a playlist about our love, what would you name it?" },
+            { title: "Holding Hands", question: "What does it feel like when we hold hands?" },
+            { title: "Your Forever", question: "Why do you want to spend forever with me?" },
+            { title: "The Love Letter", question: "Write me a love letter expressing your deepest feelings." }
+        ];
+
+        function ValentinesNotebook() {
+            const [currentPage, setCurrentPage] = useState('cover');
+            const [currentTopic, setCurrentTopic] = useState(0);
+            const [answers, setAnswers] = useState({});
+            const [partnerNames, setPartnerNames] = useState({ partner1: '', partner2: '' });
+            const [showSaveNotification, setShowSaveNotification] = useState(false);
+
+            useEffect(() => {
+                const savedAnswers = localStorage.getItem('valentineAnswers');
+                const savedNames = localStorage.getItem('partnerNames');
+                
+                if (savedAnswers) {
+                    try {
+                        setAnswers(JSON.parse(savedAnswers));
+                    } catch (e) {
+                        console.error('Error loading answers');
+                    }
+                }
+                if (savedNames) {
+                    try {
+                        setPartnerNames(JSON.parse(savedNames));
+                    } catch (e) {
+                        console.error('Error loading names');
+                    }
+                }
+            }, []);
+
+            const saveAnswer = (topicIndex, partner, value) => {
+                const newAnswers = {
+                    ...answers,
+                    [topicIndex]: {
+                        ...answers[topicIndex],
+                        [partner]: value
+                    }
+                };
+                setAnswers(newAnswers);
+                localStorage.setItem('valentineAnswers', JSON.stringify(newAnswers));
+            };
+
+            const saveNames = (partner, name) => {
+                const newNames = { ...partnerNames, [partner]: name };
+                setPartnerNames(newNames);
+                localStorage.setItem('partnerNames', JSON.stringify(newNames));
+            };
+
+            const exportData = () => {
+                const data = {
+                    partnerNames,
+                    answers,
+                    exportDate: new Date().toISOString()
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'valentine-notebook-backup.json';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                setShowSaveNotification(true);
+                setTimeout(() => setShowSaveNotification(false), 3000);
+            };
+
+            const importData = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            setAnswers(data.answers || {});
+                            setPartnerNames(data.partnerNames || { partner1: '', partner2: '' });
+                            localStorage.setItem('valentineAnswers', JSON.stringify(data.answers || {}));
+                            localStorage.setItem('partnerNames', JSON.stringify(data.partnerNames || {}));
+                            setShowSaveNotification(true);
+                            setTimeout(() => setShowSaveNotification(false), 3000);
+                        } catch (error) {
+                            alert('Error importing data. Please check the file.');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+
+            const resetData = () => {
+                if (confirm('Are you sure you want to delete all answers? This cannot be undone.')) {
+                    setAnswers({});
+                    localStorage.removeItem('valentineAnswers');
+                    setShowSaveNotification(true);
+                    setTimeout(() => setShowSaveNotification(false), 3000);
+                }
+            };
+
+            const getProgress = () => {
+                const total = topics.length * 2;
+                let completed = 0;
+                Object.values(answers).forEach(topic => {
+                    if (topic.partner1 && topic.partner1.trim()) completed++;
+                    if (topic.partner2 && topic.partner2.trim()) completed++;
+                });
+                return Math.round((completed / total) * 100);
+            };
+
+            const isTopicComplete = (index) => {
+                return answers[index]?.partner1?.trim() && answers[index]?.partner2?.trim();
+            };
+
+            if (currentPage === 'cover') {
+                return h('div', { className: 'relative' },
+                    showSaveNotification && h('div', { className: 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2' },
+                        h(CheckIcon),
+                        'Saved!'
+                    ),
+                    h('div', { className: 'fixed top-4 left-4 z-50 flex gap-2' },
+                        h('button', { 
+                            onClick: exportData,
+                            className: 'bg-white text-rose-600 p-3 rounded-full shadow-lg hover:shadow-xl transition-all border-2 border-rose-200',
+                            title: 'Export Backup'
+                        }, h(DownloadIcon)),
+                        h('label', { 
+                            className: 'bg-white text-rose-600 p-3 rounded-full shadow-lg hover:shadow-xl transition-all border-2 border-rose-200 cursor-pointer',
+                            title: 'Import Backup'
+                        },
+                            h(UploadIcon),
+                            h('input', { 
+                                type: 'file',
+                                accept: '.json',
+                                onChange: importData,
+                                className: 'hidden'
+                            })
+                        ),
+                        h('button', { 
+                            onClick: resetData,
+                            className: 'bg-white text-rose-600 p-3 rounded-full shadow-lg hover:shadow-xl transition-all border-2 border-rose-200',
+                            title: 'Reset All Data'
+                        }, h(RefreshIcon))
+                    ),
+                    h('div', { className: 'min-h-screen bg-gradient-to-br from-pink-100 via-pink-50 to-rose-100 flex items-center justify-center p-8' },
+                        h('div', { className: 'text-center max-w-2xl' },
+                            h('div', { className: 'text-6xl mb-6' }, '❤️ 💕 ❤️'),
+                            h('h1', { className: 'text-6xl font-serif text-rose-600 mb-6 drop-shadow-lg' }, 'Our Love Story'),
+                            h('p', { className: 'text-2xl text-rose-500 italic mb-8' }, '80 Questions to Deepen Our Connection'),
+                            h('div', { className: 'text-5xl mb-8' }, '💖 ❤️ 💖'),
+                            
+                            h('div', { className: 'bg-white rounded-2xl p-8 shadow-2xl mb-8' },
+                                h('div', { className: 'mb-6' },
+                                    h('label', { className: 'block text-rose-600 font-semibold mb-2' }, 'Partner 1 Name:'),
+                                    h('input', {
+                                        type: 'text',
+                                        value: partnerNames.partner1,
+                                        onChange: (e) => saveNames('partner1', e.target.value),
+                                        className: 'w-full p-3 border-2 border-rose-200 rounded-lg focus:border-rose-400 focus:outline-none',
+                                        placeholder: 'Enter name...'
+                                    })
+                                ),
+                                h('div', null,
+                                    h('label', { className: 'block text-rose-600 font-semibold mb-2' }, 'Partner 2 Name:'),
+                                    h('input', {
+                                        type: 'text',
+                                        value: partnerNames.partner2,
+                                        onChange: (e) => saveNames('partner2', e.target.value),
+                                        className: 'w-full p-3 border-2 border-rose-200 rounded-lg focus:border-rose-400 focus:outline-none',
+                                        placeholder: 'Enter name...'
+                                    })
+                                )
+                            ),
+
+                            h('div', { className: 'bg-white rounded-2xl p-6 shadow-xl mb-8' },
+                                h('div', { className: 'flex items-center justify-between mb-3' },
+                                    h('span', { className: 'text-rose-600 font-semibold' }, 'Progress'),
+                                    h('span', { className: 'text-rose-600 font-bold' }, getProgress() + '%')
+                                ),
+                                h('div', { className: 'w-full bg-rose-100 rounded-full h-4' },
+                                    h('div', { 
+                                        className: 'bg-gradient-to-r from-rose-400 to-pink-500 h-4 rounded-full transition-all duration-500',
+                                        style: { width: getProgress() + '%' }
+                                    })
+                                )
+                            ),
+
+                            h('button', {
+                                onClick: () => setCurrentPage('index'),
+                                className: 'bg-gradient-to-r from-rose-500 to-pink-500 text-white px-12 py-4 rounded-full text-xl font-semibold hover:shadow-2xl transform hover:scale-105 transition-all duration-300 inline-flex items-center gap-2'
+                            },
+                                h(BookIcon),
+                                'Start Our Journey'
+                            )
+                        )
+                    )
+                );
+            }
+
+            if (currentPage === 'index') {
+                return h('div', { className: 'min-h-screen bg-gradient-to-br from-pink-50 to-rose-50 p-8' },
+                    h('div', { className: 'max-w-6xl mx-auto' },
+                        h('div', { className: 'text-center mb-8' },
+                            h('h2', { className: 'text-4xl font-serif text-rose-600 mb-4' }, 'Topic Index'),
+                            h('div', { className: 'text-rose-400' }, '❤️ 💕 ❤️')
+                        ),
+
+                        h('div', { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8' },
+                            topics.map((topic, index) => 
+                                h('button', {
+                                    key: index,
+                                    onClick: () => {
+                                        setCurrentTopic(index);
+                                        setCurrentPage('topic');
+                                    },
+                                    className: `p-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl ${
+                                        isTopicComplete(index)
+                                            ? 'bg-gradient-to-br from-green-100 to-emerald-100 border-2 border-green-400 text-green-700'
+                                            : 'bg-white border-2 border-rose-200 text-rose-600 hover:border-rose-400'
+                                    }`
+                                },
+                                    h('div', { className: 'flex items-center justify-between mb-2' },
+                                        h('span', { className: 'text-sm' }, '#' + (index + 1)),
+                                        isTopicComplete(index) && h(CheckIcon, { size: 16, className: 'text-green-600' })
+                                    ),
+                                    h('div', { className: 'text-sm' }, topic.title)
+                                )
+                            )
+                        ),
+
+                        h('button', {
+                            onClick: () => setCurrentPage('cover'),
+                            className: 'bg-rose-500 text-white px-8 py-3 rounded-full font-semibold hover:bg-rose-600 transition-all'
+                        }, 'Back to Cover')
+                    )
+                );
+            }
+
+            if (currentPage === 'topic') {
+                const topic = topics[currentTopic];
+                
+                return h('div', { className: 'min-h-screen bg-gradient-to-br from-pink-50 to-rose-50 p-8' },
+                    h('div', { className: 'max-w-4xl mx-auto' },
+                        h('div', { className: 'bg-white rounded-2xl shadow-2xl p-8 lg:p-12' },
+                            h('div', { className: 'flex justify-between items-center mb-6' },
+                                h('span', { className: 'text-rose-500 font-bold' }, `Page ${currentTopic + 1} of 80`),
+                                isTopicComplete(currentTopic) && h('span', { className: 'bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1' },
+                                    h(CheckIcon, { size: 16 }),
+                                    ' Complete'
+                                )
+                            ),
+
+                            h('h2', { className: 'text-4xl font-serif text-rose-600 text-center mb-6 pb-4 border-b-4 border-rose-300' },
+                                topic.title
+                            ),
+
+                            h('div', { className: 'text-center text-rose-400 text-2xl mb-6' }, '❤️ 💕 ❤️'),
+
+                            h('p', { className: 'text-xl text-gray-700 mb-8 text-center leading-relaxed' },
+                                topic.question
+                            ),
+
+                            h('div', { className: 'space-y-6' },
+                                h('div', { className: 'border-t-2 border-dashed border-rose-200 pt-6' },
+                                    h('label', { className: 'block text-rose-600 font-bold mb-3 text-lg' },
+                                        (partnerNames.partner1 || 'Partner 1') + ':'
+                                    ),
+                                    h('textarea', {
+                                        value: answers[currentTopic]?.partner1 || '',
+                                        onChange: (e) => saveAnswer(currentTopic, 'partner1', e.target.value),
+                                        className: 'w-full min-h-[150px] p-4 border-2 border-rose-200 rounded-xl focus:border-rose-400 focus:outline-none resize-y font-serif text-gray-700',
+                                        placeholder: 'Write your answer here...'
+                                    })
+                                ),
+
+                                h('div', { className: 'border-t-2 border-dashed border-rose-200 pt-6' },
+                                    h('label', { className: 'block text-rose-600 font-bold mb-3 text-lg' },
+                                        (partnerNames.partner2 || 'Partner 2') + ':'
+                                    ),
+                                    h('textarea', {
+                                        value: answers[currentTopic]?.partner2 || '',
+                                        onChange: (e) => saveAnswer(currentTopic, 'partner2', e.target.value),
+                                        className: 'w-full min-h-[150px] p-4 border-2 border-rose-200 rounded-xl focus:border-rose-400 focus:outline-none resize-y font-serif text-gray-700',
+                                        placeholder: 'Write your answer here...'
+                                    })
+                                )
+                            ),
+
+                            h('div', { className: 'flex flex-wrap gap-4 mt-8 justify-between' },
+                                h('button', {
+                                    onClick: () => setCurrentTopic(Math.max(0, currentTopic - 1)),
+                                    disabled: currentTopic === 0,
+                                    className: 'bg-rose-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-rose-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all'
+                                }, '← Previous'),
+
+                                h('button', {
+                                    onClick: () => setCurrentPage('index'),
+                                    className: 'bg-white border-2 border-rose-500 text-rose-500 px-6 py-3 rounded-full font-semibold hover:bg-rose-50 transition-all'
+                                }, 'View Index'),
+
+                                h('button', {
+                                    onClick: () => setCurrentTopic(Math.min(topics.length - 1, currentTopic + 1)),
+                                    disabled: currentTopic === topics.length - 1,
+                                    className: 'bg-rose-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-rose-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all'
+                                }, 'Next →')
+                            )
+                        )
+                    )
+                );
+            }
+        }
+
+        ReactDOM.render(h(ValentinesNotebook), document.getElementById('root'));
+    </script>
+</body>
+</html>
