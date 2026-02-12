@@ -7,10 +7,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         body {
             margin: 0;
             font-family: 'Georgia', serif;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .typing-indicator {
+            animation: pulse 1.5s ease-in-out infinite;
         }
     </style>
 </head>
@@ -18,6 +27,22 @@
     <div id="root"></div>
 
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAVikLXam-fzW8-UK3nNnnftuHkOzufeg4",
+            authDomain: "valentines2026-8d3f3.firebaseapp.com",
+            databaseURL: "https://valentines2026-8d3f3-default-rtdb.firebaseio.com",
+            projectId: "valentines2026-8d3f3",
+            storageBucket: "valentines2026-8d3f3.firebasestorage.app",
+            messagingSenderId: "626066330237",
+            appId: "1:626066330237:web:4faa77bcf11f621512d714",
+            measurementId: "G-89MF737DKH"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         const { useState, useEffect, createElement: h } = React;
 
         const HeartIcon = () => h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
@@ -35,12 +60,6 @@
             h('line', { x1: 12, y1: 15, x2: 12, y2: 3 })
         );
 
-        const UploadIcon = () => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
-            h('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
-            h('polyline', { points: '17 8 12 3 7 8' }),
-            h('line', { x1: 12, y1: 3, x2: 12, y2: 15 })
-        );
-
         const RefreshIcon = () => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
             h('polyline', { points: '1 4 1 10 7 10' }),
             h('polyline', { points: '23 20 23 14 17 14' }),
@@ -49,6 +68,13 @@
 
         const CheckIcon = () => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
             h('polyline', { points: '20 6 9 17 4 12' })
+        );
+
+        const WifiIcon = () => h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
+            h('path', { d: 'M5 12.55a11 11 0 0 1 14.08 0' }),
+            h('path', { d: 'M1.42 9a16 16 0 0 1 21.16 0' }),
+            h('path', { d: 'M8.53 16.11a6 6 0 0 1 6.95 0' }),
+            h('line', { x1: 12, y1: 20, x2: 12.01, y2: 20 })
         );
 
         const topics = [
@@ -139,43 +165,70 @@
             const [answers, setAnswers] = useState({});
             const [partnerNames, setPartnerNames] = useState({ partner1: '', partner2: '' });
             const [showSaveNotification, setShowSaveNotification] = useState(false);
+            const [isConnected, setIsConnected] = useState(true);
+            const [typingStatus, setTypingStatus] = useState({});
 
+            // Listen to Firebase connection status
             useEffect(() => {
-                const savedAnswers = localStorage.getItem('valentineAnswers');
-                const savedNames = localStorage.getItem('partnerNames');
+                const connectedRef = database.ref('.info/connected');
+                connectedRef.on('value', (snap) => {
+                    setIsConnected(snap.val() === true);
+                });
+                return () => connectedRef.off();
+            }, []);
+
+            // Load data from Firebase
+            useEffect(() => {
+                const answersRef = database.ref('answers');
+                const namesRef = database.ref('partnerNames');
                 
-                if (savedAnswers) {
-                    try {
-                        setAnswers(JSON.parse(savedAnswers));
-                    } catch (e) {
-                        console.error('Error loading answers');
+                answersRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        setAnswers(data);
                     }
-                }
-                if (savedNames) {
-                    try {
-                        setPartnerNames(JSON.parse(savedNames));
-                    } catch (e) {
-                        console.error('Error loading names');
+                });
+
+                namesRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        setPartnerNames(data);
                     }
-                }
+                });
+
+                return () => {
+                    answersRef.off();
+                    namesRef.off();
+                };
+            }, []);
+
+            // Listen for typing indicators
+            useEffect(() => {
+                const typingRef = database.ref('typing');
+                typingRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        setTypingStatus(data);
+                    }
+                });
+                return () => typingRef.off();
             }, []);
 
             const saveAnswer = (topicIndex, partner, value) => {
-                const newAnswers = {
-                    ...answers,
-                    [topicIndex]: {
-                        ...answers[topicIndex],
-                        [partner]: value
-                    }
-                };
-                setAnswers(newAnswers);
-                localStorage.setItem('valentineAnswers', JSON.stringify(newAnswers));
+                database.ref(`answers/${topicIndex}/${partner}`).set(value);
+                
+                // Clear typing indicator after saving
+                setTimeout(() => {
+                    database.ref(`typing/${topicIndex}/${partner}`).set(false);
+                }, 500);
+            };
+
+            const setTyping = (topicIndex, partner, isTyping) => {
+                database.ref(`typing/${topicIndex}/${partner}`).set(isTyping);
             };
 
             const saveNames = (partner, name) => {
-                const newNames = { ...partnerNames, [partner]: name };
-                setPartnerNames(newNames);
-                localStorage.setItem('partnerNames', JSON.stringify(newNames));
+                database.ref(`partnerNames/${partner}`).set(name);
             };
 
             const exportData = () => {
@@ -196,31 +249,10 @@
                 setTimeout(() => setShowSaveNotification(false), 3000);
             };
 
-            const importData = (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            const data = JSON.parse(e.target.result);
-                            setAnswers(data.answers || {});
-                            setPartnerNames(data.partnerNames || { partner1: '', partner2: '' });
-                            localStorage.setItem('valentineAnswers', JSON.stringify(data.answers || {}));
-                            localStorage.setItem('partnerNames', JSON.stringify(data.partnerNames || {}));
-                            setShowSaveNotification(true);
-                            setTimeout(() => setShowSaveNotification(false), 3000);
-                        } catch (error) {
-                            alert('Error importing data. Please check the file.');
-                        }
-                    };
-                    reader.readAsText(file);
-                }
-            };
-
             const resetData = () => {
-                if (confirm('Are you sure you want to delete all answers? This cannot be undone.')) {
-                    setAnswers({});
-                    localStorage.removeItem('valentineAnswers');
+                if (confirm('Are you sure you want to delete all answers? This will affect both partners and cannot be undone.')) {
+                    database.ref('answers').remove();
+                    database.ref('typing').remove();
                     setShowSaveNotification(true);
                     setTimeout(() => setShowSaveNotification(false), 3000);
                 }
@@ -252,29 +284,22 @@
                             className: 'bg-white text-rose-600 p-3 rounded-full shadow-lg hover:shadow-xl transition-all border-2 border-rose-200',
                             title: 'Export Backup'
                         }, h(DownloadIcon)),
-                        h('label', { 
-                            className: 'bg-white text-rose-600 p-3 rounded-full shadow-lg hover:shadow-xl transition-all border-2 border-rose-200 cursor-pointer',
-                            title: 'Import Backup'
-                        },
-                            h(UploadIcon),
-                            h('input', { 
-                                type: 'file',
-                                accept: '.json',
-                                onChange: importData,
-                                className: 'hidden'
-                            })
-                        ),
                         h('button', { 
                             onClick: resetData,
                             className: 'bg-white text-rose-600 p-3 rounded-full shadow-lg hover:shadow-xl transition-all border-2 border-rose-200',
                             title: 'Reset All Data'
                         }, h(RefreshIcon))
                     ),
+                    h('div', { className: `fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-full ${isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}` },
+                        h(WifiIcon),
+                        h('span', { className: 'text-sm font-semibold' }, isConnected ? 'Connected' : 'Offline')
+                    ),
                     h('div', { className: 'min-h-screen bg-gradient-to-br from-pink-100 via-pink-50 to-rose-100 flex items-center justify-center p-8' },
                         h('div', { className: 'text-center max-w-2xl' },
                             h('div', { className: 'text-6xl mb-6' }, '❤️ 💕 ❤️'),
                             h('h1', { className: 'text-6xl font-serif text-rose-600 mb-6 drop-shadow-lg' }, 'Our Love Story'),
-                            h('p', { className: 'text-2xl text-rose-500 italic mb-8' }, '80 Questions to Deepen Our Connection'),
+                            h('p', { className: 'text-2xl text-rose-500 italic mb-4' }, '80 Questions to Deepen Our Connection'),
+                            h('p', { className: 'text-sm text-rose-400 mb-8' }, '✨ Real-time syncing enabled - see each other\'s answers instantly! ✨'),
                             h('div', { className: 'text-5xl mb-8' }, '💖 ❤️ 💖'),
                             
                             h('div', { className: 'bg-white rounded-2xl p-8 shadow-2xl mb-8' },
@@ -366,15 +391,19 @@
 
             if (currentPage === 'topic') {
                 const topic = topics[currentTopic];
+                const partner1Typing = typingStatus[currentTopic]?.partner1;
+                const partner2Typing = typingStatus[currentTopic]?.partner2;
                 
                 return h('div', { className: 'min-h-screen bg-gradient-to-br from-pink-50 to-rose-50 p-8' },
                     h('div', { className: 'max-w-4xl mx-auto' },
                         h('div', { className: 'bg-white rounded-2xl shadow-2xl p-8 lg:p-12' },
                             h('div', { className: 'flex justify-between items-center mb-6' },
                                 h('span', { className: 'text-rose-500 font-bold' }, `Page ${currentTopic + 1} of 80`),
-                                isTopicComplete(currentTopic) && h('span', { className: 'bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1' },
-                                    h(CheckIcon, { size: 16 }),
-                                    ' Complete'
+                                h('div', { className: 'flex items-center gap-2' },
+                                    isTopicComplete(currentTopic) && h('span', { className: 'bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1' },
+                                        h(CheckIcon, { size: 16 }),
+                                        ' Complete'
+                                    )
                                 )
                             ),
 
@@ -390,24 +419,34 @@
 
                             h('div', { className: 'space-y-6' },
                                 h('div', { className: 'border-t-2 border-dashed border-rose-200 pt-6' },
-                                    h('label', { className: 'block text-rose-600 font-bold mb-3 text-lg' },
-                                        (partnerNames.partner1 || 'Partner 1') + ':'
+                                    h('div', { className: 'flex items-center justify-between mb-3' },
+                                        h('label', { className: 'block text-rose-600 font-bold text-lg' },
+                                            (partnerNames.partner1 || 'Partner 1') + ':'
+                                        ),
+                                        partner1Typing && h('span', { className: 'text-sm text-rose-400 typing-indicator' }, '✍️ typing...')
                                     ),
                                     h('textarea', {
                                         value: answers[currentTopic]?.partner1 || '',
                                         onChange: (e) => saveAnswer(currentTopic, 'partner1', e.target.value),
+                                        onFocus: () => setTyping(currentTopic, 'partner1', true),
+                                        onBlur: () => setTyping(currentTopic, 'partner1', false),
                                         className: 'w-full min-h-[150px] p-4 border-2 border-rose-200 rounded-xl focus:border-rose-400 focus:outline-none resize-y font-serif text-gray-700',
                                         placeholder: 'Write your answer here...'
                                     })
                                 ),
 
                                 h('div', { className: 'border-t-2 border-dashed border-rose-200 pt-6' },
-                                    h('label', { className: 'block text-rose-600 font-bold mb-3 text-lg' },
-                                        (partnerNames.partner2 || 'Partner 2') + ':'
+                                    h('div', { className: 'flex items-center justify-between mb-3' },
+                                        h('label', { className: 'block text-rose-600 font-bold text-lg' },
+                                            (partnerNames.partner2 || 'Partner 2') + ':'
+                                        ),
+                                        partner2Typing && h('span', { className: 'text-sm text-rose-400 typing-indicator' }, '✍️ typing...')
                                     ),
                                     h('textarea', {
                                         value: answers[currentTopic]?.partner2 || '',
                                         onChange: (e) => saveAnswer(currentTopic, 'partner2', e.target.value),
+                                        onFocus: () => setTyping(currentTopic, 'partner2', true),
+                                        onBlur: () => setTyping(currentTopic, 'partner2', false),
                                         className: 'w-full min-h-[150px] p-4 border-2 border-rose-200 rounded-xl focus:border-rose-400 focus:outline-none resize-y font-serif text-gray-700',
                                         placeholder: 'Write your answer here...'
                                     })
