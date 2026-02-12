@@ -173,6 +173,7 @@
             const [isUnlocked, setIsUnlocked] = useState(false);
             const [passwordInput, setPasswordInput] = useState('');
             const [showError, setShowError] = useState(false);
+            const [currentUser, setCurrentUser] = useState(null); // 'katelyn' or 'amaan'
             const [currentPage, setCurrentPage] = useState('cover');
             const [currentTopic, setCurrentTopic] = useState(0);
             const [answers, setAnswers] = useState({});
@@ -184,8 +185,12 @@
             // Check if already unlocked
             useEffect(() => {
                 const unlocked = sessionStorage.getItem('unlocked');
+                const user = sessionStorage.getItem('currentUser');
                 if (unlocked === 'true') {
                     setIsUnlocked(true);
+                }
+                if (user) {
+                    setCurrentUser(user);
                 }
             }, []);
 
@@ -251,6 +256,11 @@
                     setShowError(true);
                     setTimeout(() => setShowError(false), 500);
                 }
+            };
+
+            const selectUser = (user) => {
+                setCurrentUser(user);
+                sessionStorage.setItem('currentUser', user);
             };
 
             const saveAnswer = (topicIndex, partner, value) => {
@@ -355,6 +365,34 @@
                 );
             }
 
+            // User selection screen
+            if (isUnlocked && !currentUser) {
+                return h('div', { className: 'min-h-screen bg-gradient-to-br from-pink-100 via-rose-100 to-pink-200 flex items-center justify-center p-8' },
+                    h('div', { className: 'text-center max-w-2xl w-full unlock-animation' },
+                        h('div', { className: 'text-6xl mb-6' }, '❤️ 💕 ❤️'),
+                        h('h1', { className: 'text-5xl font-serif text-rose-600 mb-4' }, 'Who are you?'),
+                        h('p', { className: 'text-xl text-rose-500 mb-8' }, 'Select your name to continue'),
+                        
+                        h('div', { className: 'flex gap-6 justify-center' },
+                            h('button', {
+                                onClick: () => selectUser('katelyn'),
+                                className: 'bg-white hover:bg-gradient-to-br hover:from-pink-100 hover:to-rose-100 border-4 border-rose-300 text-rose-600 px-12 py-8 rounded-3xl text-2xl font-bold hover:shadow-2xl transform hover:scale-105 transition-all duration-300'
+                            }, 
+                                h('div', { className: 'text-4xl mb-2' }, '💖'),
+                                h('div', null, 'Katelyn')
+                            ),
+                            h('button', {
+                                onClick: () => selectUser('amaan'),
+                                className: 'bg-white hover:bg-gradient-to-br hover:from-pink-100 hover:to-rose-100 border-4 border-rose-300 text-rose-600 px-12 py-8 rounded-3xl text-2xl font-bold hover:shadow-2xl transform hover:scale-105 transition-all duration-300'
+                            },
+                                h('div', { className: 'text-4xl mb-2' }, '💙'),
+                                h('div', null, 'Amaan')
+                            )
+                        )
+                    )
+                );
+            }
+
             if (currentPage === 'cover') {
                 return h('div', { className: 'relative unlock-animation' },
                     showSaveNotification && h('div', { className: 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2' },
@@ -454,6 +492,8 @@
                 const topic = topics[currentTopic];
                 const katelynTyping = typingStatus[currentTopic]?.katelyn;
                 const amaanTyping = typingStatus[currentTopic]?.amaan;
+                const revealed = isRevealed(currentTopic);
+                const bothAnswered = canReveal(currentTopic);
                 
                 return h('div', { className: 'min-h-screen bg-gradient-to-br from-pink-50 to-rose-50 p-8' },
                     h('div', { className: 'max-w-4xl mx-auto' },
@@ -478,20 +518,114 @@
                                 topic.question
                             ),
 
+                            bothAnswered && !revealed && h('div', { className: 'mb-6 text-center' },
+                                h('button', {
+                                    onClick: () => toggleReveal(currentTopic),
+                                    className: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-3 rounded-full font-semibold hover:shadow-2xl transform hover:scale-105 transition-all duration-300 inline-flex items-center gap-2'
+                                }, '🎁 Reveal Answers')
+                            ),
+
                             h('div', { className: 'space-y-6' },
                                 h('div', { className: 'border-t-2 border-dashed border-rose-200 pt-6' },
                                     h('div', { className: 'flex items-center justify-between mb-3' },
                                         h('label', { className: 'block text-rose-600 font-bold text-lg' }, 'Katelyn:'),
-                                        katelynTyping && h('span', { className: 'text-sm text-rose-400 typing-indicator' }, '✍️ typing...')
+                                        katelynTyping && currentUser !== 'katelyn' && h('span', { className: 'text-sm text-rose-400 typing-indicator' }, '✍️ typing...')
                                     ),
-                                    h('textarea', {
-                                        value: answers[currentTopic]?.katelyn || '',
-                                        onChange: (e) => saveAnswer(currentTopic, 'katelyn', e.target.value),
-                                        onFocus: () => setTyping(currentTopic, 'katelyn', true),
-                                        onBlur: () => setTyping(currentTopic, 'katelyn', false),
-                                        className: 'w-full min-h-[150px] p-4 border-2 border-rose-200 rounded-xl focus:border-rose-400 focus:outline-none resize-y font-serif text-gray-700',
-                                        placeholder: 'Write your answer here...'
-                                    })
+                                    revealed ? (
+                                        h('div', { className: 'w-full min-h-[150px] p-4 border-2 border-green-200 bg-green-50 rounded-xl font-serif text-gray-700 whitespace-pre-wrap' },
+                                            answers[currentTopic]?.katelyn || 'No answer yet'
+                                        )
+                                    ) : currentUser === 'katelyn' ? (
+                                        h('textarea', {
+                                            value: answers[currentTopic]?.katelyn || '',
+                                            onChange: (e) => saveAnswer(currentTopic, 'katelyn', e.target.value),
+                                            onFocus: () => setTyping(currentTopic, 'katelyn', true),
+                                            onBlur: () => setTyping(currentTopic, 'katelyn', false),
+                                            className: 'w-full min-h-[150px] p-4 border-2 border-rose-200 rounded-xl focus:border-rose-400 focus:outline-none resize-y font-serif text-gray-700',
+                                            placeholder: 'Write your answer here...'
+                                        })
+                                    ) : (
+                                        answers[currentTopic]?.katelyn?.trim() ? (
+                                            h('div', { className: 'w-full min-h-[150px] p-4 border-2 border-purple-200 bg-purple-50 rounded-xl font-serif text-gray-400 flex items-center justify-center text-center' },
+                                                h('div', null,
+                                                    h('div', { className: 'text-4xl mb-2' }, '🔒'),
+                                                    h('div', { className: 'font-semibold' }, 'Answer Hidden'),
+                                                    h('div', { className: 'text-sm mt-1' }, 'Waiting to reveal...')
+                                                )
+                                            )
+                                        ) : (
+                                            h('div', { className: 'w-full min-h-[150px] p-4 border-2 border-gray-200 bg-gray-50 rounded-xl font-serif text-gray-400 flex items-center justify-center text-center' },
+                                                h('div', null,
+                                                    h('div', { className: 'text-4xl mb-2' }, '⏳'),
+                                                    h('div', { className: 'font-semibold' }, 'Waiting for Katelyn...'),
+                                                    h('div', { className: 'text-sm mt-1' }, 'She hasn\'t answered yet')
+                                                )
+                                            )
+                                        )
+                                    ),
+                                    !revealed && currentUser === 'katelyn' && answers[currentTopic]?.katelyn?.trim() && h('p', { className: 'text-sm text-green-600 mt-2 flex items-center gap-1' },
+                                        h(CheckIcon, { size: 14 }),
+                                        'Answer saved! ✨'
+                                    )
+                                ),
+
+                                h('div', { className: 'border-t-2 border-dashed border-rose-200 pt-6' },
+                                    h('div', { className: 'flex items-center justify-between mb-3' },
+                                        h('label', { className: 'block text-rose-600 font-bold text-lg' }, 'Amaan:'),
+                                        amaanTyping && currentUser !== 'amaan' && h('span', { className: 'text-sm text-rose-400 typing-indicator' }, '✍️ typing...')
+                                    ),
+                                    revealed ? (
+                                        h('div', { className: 'w-full min-h-[150px] p-4 border-2 border-green-200 bg-green-50 rounded-xl font-serif text-gray-700 whitespace-pre-wrap' },
+                                            answers[currentTopic]?.amaan || 'No answer yet'
+                                        )
+                                    ) : currentUser === 'amaan' ? (
+                                        h('textarea', {
+                                            value: answers[currentTopic]?.amaan || '',
+                                            onChange: (e) => saveAnswer(currentTopic, 'amaan', e.target.value),
+                                            onFocus: () => setTyping(currentTopic, 'amaan', true),
+                                            onBlur: () => setTyping(currentTopic, 'amaan', false),
+                                            className: 'w-full min-h-[150px] p-4 border-2 border-rose-200 rounded-xl focus:border-rose-400 focus:outline-none resize-y font-serif text-gray-700',
+                                            placeholder: 'Write your answer here...'
+                                        })
+                                    ) : (
+                                        answers[currentTopic]?.amaan?.trim() ? (
+                                            h('div', { className: 'w-full min-h-[150px] p-4 border-2 border-purple-200 bg-purple-50 rounded-xl font-serif text-gray-400 flex items-center justify-center text-center' },
+                                                h('div', null,
+                                                    h('div', { className: 'text-4xl mb-2' }, '🔒'),
+                                                    h('div', { className: 'font-semibold' }, 'Answer Hidden'),
+                                                    h('div', { className: 'text-sm mt-1' }, 'Waiting to reveal...')
+                                                )
+                                            )
+                                        ) : (
+                                            h('div', { className: 'w-full min-h-[150px] p-4 border-2 border-gray-200 bg-gray-50 rounded-xl font-serif text-gray-400 flex items-center justify-center text-center' },
+                                                h('div', null,
+                                                    h('div', { className: 'text-4xl mb-2' }, '⏳'),
+                                                    h('div', { className: 'font-semibold' }, 'Waiting for Amaan...'),
+                                                    h('div', { className: 'text-sm mt-1' }, 'He hasn\'t answered yet')
+                                                )
+                                            )
+                                        )
+                                    ),
+                                    !revealed && currentUser === 'amaan' && answers[currentTopic]?.amaan?.trim() && h('p', { className: 'text-sm text-green-600 mt-2 flex items-center gap-1' },
+                                        h(CheckIcon, { size: 14 }),
+                                        'Answer saved! ✨'
+                                    )
+                                )
+                            ),                    ) : (
+                                        h('textarea', {
+                                            value: answers[currentTopic]?.katelyn || '',
+                                            onChange: (e) => saveAnswer(currentTopic, 'katelyn', e.target.value),
+                                            onFocus: () => setTyping(currentTopic, 'katelyn', true),
+                                            onBlur: () => setTyping(currentTopic, 'katelyn', false),
+                                            className: 'w-full min-h-[150px] p-4 border-2 border-rose-200 rounded-xl focus:border-rose-400 focus:outline-none resize-y font-serif text-gray-700',
+                                            placeholder: 'Write your answer here...',
+                                            disabled: revealed
+                                        })
+                                    ),
+                                    !revealed && answers[currentTopic]?.katelyn?.trim() && h('p', { className: 'text-sm text-green-600 mt-2 flex items-center gap-1' },
+                                        h(CheckIcon, { size: 14 }),
+                                        'Answer saved! ✨'
+                                    )
                                 ),
 
                                 h('div', { className: 'border-t-2 border-dashed border-rose-200 pt-6' },
@@ -499,15 +633,33 @@
                                         h('label', { className: 'block text-rose-600 font-bold text-lg' }, 'Amaan:'),
                                         amaanTyping && h('span', { className: 'text-sm text-rose-400 typing-indicator' }, '✍️ typing...')
                                     ),
-                                    h('textarea', {
-                                        value: answers[currentTopic]?.amaan || '',
-                                        onChange: (e) => saveAnswer(currentTopic, 'amaan', e.target.value),
-                                        onFocus: () => setTyping(currentTopic, 'amaan', true),
-                                        onBlur: () => setTyping(currentTopic, 'amaan', false),
-                                        className: 'w-full min-h-[150px] p-4 border-2 border-rose-200 rounded-xl focus:border-rose-400 focus:outline-none resize-y font-serif text-gray-700',
-                                        placeholder: 'Write your answer here...'
-                                    })
+                                    revealed ? (
+                                        h('div', { className: 'w-full min-h-[150px] p-4 border-2 border-green-200 bg-green-50 rounded-xl font-serif text-gray-700 whitespace-pre-wrap' },
+                                            answers[currentTopic]?.amaan || 'No answer yet'
+                                        )
+                                    ) : (
+                                        h('textarea', {
+                                            value: answers[currentTopic]?.amaan || '',
+                                            onChange: (e) => saveAnswer(currentTopic, 'amaan', e.target.value),
+                                            onFocus: () => setTyping(currentTopic, 'amaan', true),
+                                            onBlur: () => setTyping(currentTopic, 'amaan', false),
+                                            className: 'w-full min-h-[150px] p-4 border-2 border-rose-200 rounded-xl focus:border-rose-400 focus:outline-none resize-y font-serif text-gray-700',
+                                            placeholder: 'Write your answer here...',
+                                            disabled: revealed
+                                        })
+                                    ),
+                                    !revealed && answers[currentTopic]?.amaan?.trim() && h('p', { className: 'text-sm text-green-600 mt-2 flex items-center gap-1' },
+                                        h(CheckIcon, { size: 14 }),
+                                        'Answer saved! ✨'
+                                    )
                                 )
+                            ),
+
+                            revealed && h('div', { className: 'mt-6 text-center' },
+                                h('button', {
+                                    onClick: () => toggleReveal(currentTopic),
+                                    className: 'bg-gray-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-gray-600 transition-all text-sm'
+                                }, '🔒 Hide Answers')
                             ),
 
                             h('div', { className: 'flex flex-wrap gap-4 mt-8 justify-between' },
