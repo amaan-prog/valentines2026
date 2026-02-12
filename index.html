@@ -75,7 +75,7 @@
 
         const { useState, useEffect, createElement: h } = React;
 
-        const PASSWORD = "ourlove2026";
+        const PASSWORD = "<4";
 
         const CheckIcon = () => h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
             h('polyline', { points: '20 6 9 17 4 12' })
@@ -316,7 +316,7 @@
                             onSubmit: handlePasswordSubmit,
                             className: `bg-white rounded-2xl p-8 shadow-2xl ${showError ? 'shake' : ''}`
                         },
-                            h('label', { className: 'block text-rose-600 font-semibold mb-3 text-lg' }, 'Enter Password to Unlock'),
+                            h('label', { className: 'block text-rose-600 font-semibold mb-3 text-lg' }, 'Enter Your Love Symbol To Unlock'),
                             h('input', {
                                 type: 'password',
                                 value: passwordInput,
